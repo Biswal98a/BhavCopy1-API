@@ -1,22 +1,27 @@
 package com.BhavCopy_1.service;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import com.BhavCopy_1.entity.BhavCopy;
+import com.BhavCopy_1.entity.JobQueue;
 import com.BhavCopy_1.exception.ResourceNotFoundException;
 import com.BhavCopy_1.repository.BhavCopyRepository;
 import com.BhavCopy_1.utill.BhavCopyReader;
 
 @Service
 public class BhavCopyService {
-	private static final Logger log = LoggerFactory.getLogger(BhavCopyService.class);
 	
 	private BhavCopyRepository bhavCopyRepository;
 
@@ -24,20 +29,30 @@ public class BhavCopyService {
         this.bhavCopyRepository = bhavCopyRepository;
     }
 
+    public String decodeBhavCopy(String enCodedBhavCopy) throws IOException {
+        byte[] decode = Base64.getDecoder().decode(enCodedBhavCopy);
+        //"C:\Users\Merceadm\Documents\Bhav-Copy.csv"
+        File file = new File("C:\\Users\\Merceadm\\Documents\\Bhav-Copy.csv");
+        FileOutputStream fileOutputStream = new FileOutputStream(file);
+        fileOutputStream.write(decode);
+        return file.getAbsolutePath();
+    }
+
     public void saveAllTheDataOfBhavCopy(String filePath) {
-        BhavCopyReader reader=new BhavCopyReader();
+        BhavCopyReader reader = new BhavCopyReader();
         List<BhavCopy> bhavCopies = reader.extractBhavCopyData(filePath);
         bhavCopyRepository.saveAll(bhavCopies);
     }
 
-    public List<BhavCopy> getParticularSymbolBySymbol(String symbol) {
-        List<BhavCopy> results = bhavCopyRepository.getParticularSymbolBySeries(symbol);
-        if (results.isEmpty()) {
-            throw new ResourceNotFoundException("No data found for symbol: " + symbol);
-        }
-        return results;
+//    public BhavCopy getParticularSymbolBySeries(String symbol, JobQueue jobQueue) {
+//        return bhavCopyRepository.getParticularSymbolBySeries(symbol).orElseThrow(
+//                ()->new ResourceNotFoundException("The symbol is not found"+","+job.getReqid())
+//        );
+//    }
+    public BhavCopy getParticularSymbolBySeries(String symbol) {
+        return bhavCopyRepository.findBySymbol(symbol)
+            .orElseThrow(() -> new ResourceNotFoundException("BhavCopy not found for symbol: " + symbol));
     }
-
 
 	public Integer countSymbolsBySeries(String series) {
 		return bhavCopyRepository.findAllBySeries(series).size();
@@ -123,4 +138,8 @@ public class BhavCopyService {
         result.add("The Lowest traded symbol for the given series: "+series+"is "+sortedMap.get(0));
         return result;
     }
+
+	
+
+
 }
